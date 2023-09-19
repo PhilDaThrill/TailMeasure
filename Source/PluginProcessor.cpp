@@ -177,17 +177,21 @@ void TailMeasureAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
             {
                 if (!initialAmplitudeHasBeenMeasured)
                 {
-                    initialAmplitude = maxValue - minValue;
+                    initialAmplitude = std::max(0.1f, maxValue - minValue); // 0.1 in case there is no tail to speak of at all
                     initialAmplitudeHasBeenMeasured = true;
                     std::cout << "Initial amplitude has been measured." << std::endl;
                 } else
                 {
                     auto currentAmplitude = maxValue - minValue;
-                    if (currentAmplitude < 0.1 * initialAmplitude) // TODO: !!! This is blatantly wrong. Adapt this to conform to the -60 dB thing.
+                    
+                    auto threshold = initialAmplitude / std::pow(10, dBReduction / 20.0);
+                    
+                    if (currentAmplitude < threshold)
                     {
                         auto currentTime = std::chrono::steady_clock::now();
-                        auto elapsedSeconds = std::chrono::duration_cast<std::chrono::seconds>(currentTime - startTime).count();
-                        std::cout << "RT 60 of " << elapsedSeconds << " seconds!" << std::endl;
+                        float elapsedMilliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count();
+                        float elapsedSecondsWithHundredths = static_cast<float>(elapsedMilliseconds) / 1000.0f;
+                        std::cout << "RT 60 of " << elapsedSecondsWithHundredths << " seconds!" << std::endl;
                         testing = false;
                         initialAmplitudeHasBeenMeasured = false;
                     }
@@ -197,8 +201,8 @@ void TailMeasureAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
                 maxValue = std::numeric_limits<float>::min();
             }
             
-            audioData[i] = 0.0f; // We need to block the output to avoid feedback.
-            audioDataR[i] = 0.0f;
+            dataPoint = 0.0f; // We need to block the output to avoid feedback.
+            dataPointR = 0.0f;
             // Output something
             //
             //        auto currentTime = std::chrono::steady_clock::now();
@@ -225,10 +229,7 @@ void TailMeasureAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
                     initializeTest();
                     testing = true;
                 }
-                
             }
-            audioData[i] = 0.0f; // We need to block the output to avoid feedback.
-            audioDataR[i] = 0.0f;
         }
     }
 }

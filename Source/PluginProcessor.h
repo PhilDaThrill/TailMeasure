@@ -83,6 +83,7 @@ private:
     float maxValue = std::numeric_limits<float>::min();
     bool initialAmplitudeHasBeenMeasured = false;
     float initialAmplitude = 0.0f;
+    float dBReduction = 60; // We mainly want RT60, but maybe this can also be a parameter if we are feeling fancy.
     std::chrono::time_point<std::chrono::steady_clock> startTime;
     
     
