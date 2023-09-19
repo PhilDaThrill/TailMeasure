@@ -19,12 +19,7 @@ MainComponent::MainComponent()
     startTestButton.setButtonText(juce::String("Start Test"));
     
     addAndMakeVisible(startTestButton);
-    
-//    setSize(getLocalBounds().getWidth(), getLocalBounds().getHeight()); // This doesn't work ffs
-    
-    startTestButton.addListener (this);
-    
-    
+    startTestButton.setClickingTogglesState (true);
     setSize(400, 300);
     setVisible(true);
 
@@ -58,23 +53,8 @@ void MainComponent::resized()
     
 }
 
-juce::ToggleButton& MainComponent::getStartTestButton()
+juce::TextButton& MainComponent::getStartTestButton()
 {
     return startTestButton;
 }
 
-// I would prefer to better separate GUI definition from functionality, but I have no idea how.
-//
-void MainComponent::buttonClicked(juce::Button* button)
-{
-    if (button == &startTestButton) {
-        *performingTest = !*performingTest;
-        
-//        std::cout << "Start test." << std::endl;
-//        startTest();
-//        std::cout << "Plazing white noise: " << *performingTest << std::endl;
-//        std::cout << "UHUH: " << static_cast<bool>(*performingTest) << std::endl;
-    }
-    
-
-}

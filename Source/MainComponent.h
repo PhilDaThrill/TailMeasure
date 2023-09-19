@@ -18,7 +18,7 @@
 //==============================================================================
 /*
 */
-class MainComponent  : public juce::Component, public juce::Button::Listener, public TailMeasureAudioProcessor
+class MainComponent  : public juce::Component, public TailMeasureAudioProcessor
 {
 public:
     MainComponent();
@@ -26,13 +26,15 @@ public:
 
     void paint (juce::Graphics&) override;
     void resized() override;
-    void buttonClicked(juce::Button* button) override;
     
-    juce::ToggleButton& getStartTestButton();
+    juce::TextButton& getStartTestButton();
+    
+//    juce::ToggleButton& getStartTestButton();
     
 
 private:
     
-    juce::ToggleButton startTestButton {};
+    juce::TextButton startTestButton {};
+//    juce::ToggleButton startTestButton {};
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

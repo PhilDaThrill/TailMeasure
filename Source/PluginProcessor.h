@@ -58,7 +58,8 @@ public:
     
     //==============================================================================
     juce::AudioProcessorValueTreeState& getAPVTS();
-    void startTest();
+//    void startTest();
+    void initializeTest();
     juce::AudioParameterBool& getParamThing();
     juce::AudioProcessorValueTreeState parameters;
     
@@ -68,10 +69,21 @@ protected:
 private:
     juce::Random random;
     
-    
+    // Test parameters
+    int cycleLengthInMils = 10;
+    int cycleLengthInSamples;
+    int cycleIndex = 0;
+    int buildupInMils = 0.0f; // Could also be parameter. Determines how long white noise should be played before starting the measurement. Should be longer for reverbs that take some time to build up.
     const int intervalSeconds = 1; // Set the interval in seconds
-    std::chrono::time_point<std::chrono::steady_clock> startTime = std::chrono::steady_clock::now();
     
+    // Util parameters
+    bool broadcastHasOccurred = false;
+    bool testing = false;
+    float minValue = std::numeric_limits<float>::max();
+    float maxValue = std::numeric_limits<float>::min();
+    bool initialAmplitudeHasBeenMeasured = false;
+    float initialAmplitude = 0.0f;
+    std::chrono::time_point<std::chrono::steady_clock> startTime;
     
     
     //==============================================================================

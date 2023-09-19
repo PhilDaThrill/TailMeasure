@@ -26,7 +26,7 @@ parameters (*this, nullptr, juce::Identifier ("APVTS"),
     std::make_unique<juce::AudioParameterBool> (juce::ParameterID("performingTest", 1.0), // parameterID
                                                 "performingTest",     // parameter name
                                                 false)              // default value
-})
+            })
 #endif
 {
     
@@ -103,8 +103,7 @@ void TailMeasureAudioProcessor::changeProgramName (int index, const juce::String
 //==============================================================================
 void TailMeasureAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    // Use this method as the place to do any pre-playback
-    // initialisation that you need..
+    cycleLengthInSamples = cycleLengthInMils * sampleRate /1000;
 }
 
 void TailMeasureAudioProcessor::releaseResources()
@@ -139,55 +138,98 @@ bool TailMeasureAudioProcessor::isBusesLayoutSupported (const BusesLayout& layou
 }
 #endif
 
+void TailMeasureAudioProcessor::initializeTest()
+{
+    // Set up stuff like starttime i think
+    startTime = std::chrono::steady_clock::now();
+    broadcastHasOccurred = false;
+}
+
 void TailMeasureAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
-    auto totalNumInputChannels  = getTotalNumInputChannels();
-
-    auto testing = *performingTest < 0.5f ? false : true;
+//    auto totalNumInputChannels  = getTotalNumInputChannels();
         
     // Check input
-    auto readPointer = buffer.getReadPointer(0);
-    float minValue = std::numeric_limits<float>::max();
-    float maxValue = std::numeric_limits<float>::min();
-
+    // Generate output audio
+    auto* audioData = buffer.getWritePointer (0); // For the measurement, we only look at the left channel and ignore the other one(s).
+    auto* audioDataR = buffer.getWritePointer (1); // However, we still need to broadcast stereo noise for a fair test.
+    
     for (int i = 0; i < buffer.getNumSamples(); ++i)
     {
-        auto dataPoint = readPointer[i];
-        if (dataPoint < minValue) {
-            minValue = dataPoint;
-        }
-        if (dataPoint > maxValue) {
-            maxValue = dataPoint;
-        }
-    }
-    
-    
-    // Output something
-    auto currentTime = std::chrono::steady_clock::now();
-    auto elapsedSeconds = std::chrono::duration_cast<std::chrono::seconds>(currentTime - startTime).count();
-    
-    if (elapsedSeconds >= intervalSeconds) {
-        std::cout << "Min value: " << minValue << " - Max value: " << maxValue << std::endl;
-        startTime = currentTime; // Reset the start time
-    }
-    
-    // Generate output audio
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
-    {
-        auto* channelData = buffer.getWritePointer (channel);
-
-        for (int i = 0; i < buffer.getNumSamples(); ++i)
+        
+        auto& dataPoint = audioData[i];
+        auto& dataPointR = audioDataR[i];
+        if (testing)
         {
-            if (testing)
+//            std::cout << dataPoint << std::endl;
+            if (dataPoint < minValue) {
+                minValue = dataPoint;
+            }
+            if (dataPoint > maxValue) {
+                maxValue = dataPoint;
+            }
+            
+            if (cycleIndex < cycleLengthInSamples)
             {
-                channelData[i] = random.nextFloat() * 0.25f - 0.125f;
+                cycleIndex++;
             } else
             {
-                channelData[i] = 0.0f;
+                if (!initialAmplitudeHasBeenMeasured)
+                {
+                    initialAmplitude = maxValue - minValue;
+                    initialAmplitudeHasBeenMeasured = true;
+                    std::cout << "Initial amplitude has been measured." << std::endl;
+                } else
+                {
+                    auto currentAmplitude = maxValue - minValue;
+                    if (currentAmplitude < 0.1 * initialAmplitude) // TODO: !!! This is blatantly wrong. Adapt this to conform to the -60 dB thing.
+                    {
+                        auto currentTime = std::chrono::steady_clock::now();
+                        auto elapsedSeconds = std::chrono::duration_cast<std::chrono::seconds>(currentTime - startTime).count();
+                        std::cout << "RT 60 of " << elapsedSeconds << " seconds!" << std::endl;
+                        testing = false;
+                        initialAmplitudeHasBeenMeasured = false;
+                    }
+                }
+                cycleIndex = 0;
+                minValue = std::numeric_limits<float>::max();
+                maxValue = std::numeric_limits<float>::min();
             }
+            
+            audioData[i] = 0.0f; // We need to block the output to avoid feedback.
+            audioDataR[i] = 0.0f;
+            // Output something
+            //
+            //        auto currentTime = std::chrono::steady_clock::now();
+            //        auto elapsedSeconds = std::chrono::duration_cast<std::chrono::seconds>(currentTime - startTime).count();
+            //
+            //        if (elapsedSeconds >= intervalSeconds) {
+            //            std::cout << "Min value: " << minValue << " - Max value: " << maxValue << std::endl;
+            //            startTime = currentTime; // Reset the start time
+            //        }
+        } else {
+            auto broadCasting = *performingTest < 0.5f ? false : true;
+            if (broadCasting)
+            {
+                dataPoint = random.nextFloat() * 0.25f - 0.125f; // Overwrite incoming data with white noise
+                dataPointR = random.nextFloat() * 0.25f - 0.125f; // Overwrite incoming data with white noise
+                broadcastHasOccurred = true;
+                // Maybe include a mechanism to automatically stop broadcast instead of leaving it to the user
+                // Maybe give the option of "manual broadcasting" via togglebutton?
+            } else
+            {
+                if (broadcastHasOccurred)
+                {
+                    // Launch testing process
+                    initializeTest();
+                    testing = true;
+                }
+                
+            }
+            audioData[i] = 0.0f; // We need to block the output to avoid feedback.
+            audioDataR[i] = 0.0f;
         }
-        // ..do something to the data...
     }
 }
 
@@ -228,12 +270,12 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
     return new TailMeasureAudioProcessor();
 }
 
-void TailMeasureAudioProcessor::startTest()
-{
-    bool currentValue = static_cast<bool>(*performingTest);
-    *performingTest = !currentValue;
-    
-    std::cout << "Hurrr: " << *performingTest << std::endl;
-    std::cout << "Durrrr: " << static_cast<bool>(*performingTest) << std::endl;
-}
+//void TailMeasureAudioProcessor::startTest()
+//{
+//    bool currentValue = static_cast<bool>(*performingTest);
+//    *performingTest = !currentValue;
+//    
+//    std::cout << "Hurrr: " << *performingTest << std::endl;
+//    std::cout << "Durrrr: " << static_cast<bool>(*performingTest) << std::endl;
+//}
 
