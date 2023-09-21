@@ -15,7 +15,7 @@
  TailMeasure really is meant for use within JUCE's AudioPluginHost. Set it up by feeding the inputs and outputs of TailMeasure and the reverb into each other in a figure-8 manner like this:
   
  <p align="center">
-  <img src="Images/IOConfiguration.png" width="1170" height="720"  alt="IO Configuration"/>
+  <img src="Images/IOConfiguration.png" alt="IO Configuration"/>
 </p>
  
  TailMeasure does not let any audio pass through, so there is no danger of feedback.
