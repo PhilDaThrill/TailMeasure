@@ -1,6 +1,8 @@
  # TailMeasure
  
- ![TailMeasure GUI](Images/TailMeasureGUI.png)
+ <p align="center">
+  <img src="Images/TailMeasureGUI.png"  width="300" height="100" alt="TailMeasure GUI"/>
+</p>
 
  TailMeasure is a very simple and very specific tool for VST reverb effect developement. Its sole purpose is measuring the length of a reverb tail. The conventional measurement to do so is called RT60 and it is the time that it takes for the reverb to decay to a level of -60 dB.
 
@@ -11,8 +13,10 @@
  ## Setting Up TailMeasure
  
  TailMeasure really is meant for use within JUCE's AudioPluginHost. Set it up by feeding the inputs and outputs of TailMeasure and the reverb into each other in a figure-8 manner like this:
- 
- ![IO Configuration](Images/IOConfiguration.png)
+  
+ <p align="center">
+  <img src="Images/IOConfiguration.png" width="1170" height="720"  alt="IO Configuration"/>
+</p>
  
  TailMeasure does not let any audio pass through, so there is no danger of feedback.
   
