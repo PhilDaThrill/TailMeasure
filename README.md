@@ -8,7 +8,7 @@
 
  ## Building TailMeasure
 
- To build it I recommend using the Projucer file. For this, you need to have JUCE set up. Alternatively, you can use the VST3 plugin provided in the eponymous folder.
+ To build it I recommend using the Projucer file. For this, you need to have JUCE set up. Alternatively, I tried to provide the VST3 plugin file directly in the eponymous folder. For some reason, GitHub displays this as a directory. Regardless, after cloning I believe it should be possible to simply drag it into your plugin folder.
  
  ## Setting Up TailMeasure
  
@@ -27,6 +27,8 @@
  Once you have set it up, use it by simply pressing "Start Test". This will broadcast white noise into the reverb for three seconds, allowing it ample time to build up. Immediately afterwards, it measures the initial amplitude of the reverb tail, followed by continuous measurements of the decaying tail. As soon as the threshold of -60 dB has been reached, the result will be displayed on screen.
  
  The mix parameter should have no influence on the outcome, as this has no influence on the relative volumes. The same goes for predelay.
+ 
+ As a side note, you may want to consider the alternative approach of manually feeding the samples into your reverb in the context of a test. This would skip having to setup an audio environemnt. Such a test would be instantaneous, giving you the advantage of not having to wait the elapsed time for each measurement.
  
  ## Licensing
  
