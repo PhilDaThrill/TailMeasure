@@ -1,7 +1,7 @@
  # TailMeasure
  
  <p align="center">
-  <img src="Images/TailMeasureGUI.png"  width="300" height="100" alt="TailMeasure GUI"/>
+  <img src="Images/TailMeasureGUI.png"  width="300" height="120" alt="TailMeasure GUI"/>
 </p>
 
  TailMeasure is a very simple and very specific tool for VST reverb effect developement. Its sole purpose is measuring the length of a reverb tail. The conventional measurement to do so is called RT60 and it is the time that it takes for the reverb to decay to a level of -60 dB.
