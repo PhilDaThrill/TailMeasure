@@ -4,7 +4,7 @@
   <img src="Images/TailMeasureGUI.png"  width="300" height="120" alt="TailMeasure GUI"/>
 </p>
 
- TailMeasure is a very simple and very specific tool for VST reverb effect developement. Its sole purpose is measuring the length of a reverb tail. The conventional measurement to do so is called RT60 and it is the time that it takes for the reverb to decay to a level of -60 dB.
+ TailMeasure is a very simple and very specific tool for VST reverb effect developement. Its sole purpose is measuring the length of a reverb tail, which is important information for parameter tuning. The conventional measurement to do so is called RT60, the time that it takes for the reverb to decay to a level of -60 dB.
 
  ## Building TailMeasure
 
@@ -24,11 +24,11 @@
  
  ## Usage
  
- Once you have set it up, use it by simply pressing "Start Test". This will broadcast white noise into the reverb for three seconds, allowing it ample time to build up. Immediately afterwards, it measures the initial amplitude of the reverb tail, followed by continuous measurements of the decaying tail. As soon as the threshold of -60 dB has been reached, the result will be displayed on screen.
+ Once you have set it up, use it by simply pressing "Start Test". This will broadcast white noise into the reverb for three seconds, allowing it ample time to build up. Immediately afterwards, it measures the initial amplitude of the reverb tail, followed by continuous amplitude measurements of the decaying tail. As soon as the threshold of -60 dB has been reached, the result will be displayed on screen.
  
- The mix parameter should have no influence on the outcome, as this has no influence on the relative volumes. The same goes for predelay.
+ A mix parameter should have no influence on the outcome, as this has no influence on the relative volumes. The same goes for predelay (as long as it is below 3 seconds).
  
- As a side note, you may want to consider the alternative approach of manually feeding the samples into your reverb in the context of a test. This would skip having to setup an audio environemnt. Such a test would be instantaneous, giving you the advantage of not having to wait the elapsed time for each measurement.
+ As a side note, you may want to consider the alternative approach of manually feeding the samples into your reverb and measuring the output in the context of a test. This would skip having to setup an audio environemnt. Such a test would be instantaneous, giving you the advantage of not having to wait the elapsed time for each measurement.
  
  ## Licensing
  
