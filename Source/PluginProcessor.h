@@ -57,17 +57,21 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
     
     //==============================================================================
-    juce::AudioProcessorValueTreeState& getAPVTS();
+    std::shared_ptr<juce::AudioProcessorValueTreeState> getAPVTS();
 //    void startTest();
     void initializeTest();
-    juce::AudioParameterBool& getParamThing();
-    juce::AudioProcessorValueTreeState parameters;
+    
+    juce::StringArray statuses;
+    std::shared_ptr<juce::AudioProcessorValueTreeState> parameters;
     
 protected:
     
     std::atomic<float>* performingTest = nullptr;
+    std::atomic<float>* rt60Value = nullptr;
+    std::atomic<float>* statusParam = nullptr;
 private:
     juce::Random random;
+    juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
     
     // Test parameters
     int cycleLengthInMils = 10;
@@ -77,6 +81,8 @@ private:
     const int intervalSeconds = 1; // Set the interval in seconds
     
     // Util parameters
+    bool broadcasting = false;
+    int broadcastTimeInSeconds = 3;
     bool broadcastHasOccurred = false;
     bool testing = false;
     float minValue = std::numeric_limits<float>::max();

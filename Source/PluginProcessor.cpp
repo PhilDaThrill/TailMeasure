@@ -11,26 +11,21 @@
 
 //==============================================================================
 TailMeasureAudioProcessor::TailMeasureAudioProcessor():
-
-#ifndef JucePlugin_PreferredChannelConfigurations
 AudioProcessor (BusesProperties()
-     #if ! JucePlugin_IsMidiEffect
-      #if ! JucePlugin_IsSynth
        .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
-      #endif
        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
-     #endif
        ),
-parameters (*this, nullptr, juce::Identifier ("APVTS"),
-            {
-    std::make_unique<juce::AudioParameterBool> (juce::ParameterID("performingTest", 1.0), // parameterID
-                                                "performingTest",     // parameter name
-                                                false)              // default value
-            })
-#endif
+statuses("Idle", "Testing", "RT60"),
+parameters (std::make_shared<juce::AudioProcessorValueTreeState>(*this,
+                                                                 nullptr,
+                                                                 juce::Identifier ("Parameters"),
+                                                                 createParameterLayout()
+                                                                 ))
 {
     
-    performingTest = parameters.getRawParameterValue ("performingTest");
+    performingTest = parameters->getRawParameterValue ("performingTest");
+    rt60Value = parameters->getRawParameterValue ("rt60Value");
+    statusParam = parameters->getRawParameterValue ("status");
     
 }
 
@@ -115,26 +110,20 @@ void TailMeasureAudioProcessor::releaseResources()
 #ifndef JucePlugin_PreferredChannelConfigurations
 bool TailMeasureAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
-  #if JucePlugin_IsMidiEffect
-    juce::ignoreUnused (layouts);
-    return true;
-  #else
+
     // This is the place where you check if the layout is supported.
     // In this template code we only support mono or stereo.
     // Some plugin hosts, such as certain GarageBand versions, will only
     // load plugins that support stereo bus layouts.
     if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-     && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+        && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo()
+        && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::createLCR()
+        )
+    {
         return false;
-
-    // This checks if the input layout matches the output layout
-   #if ! JucePlugin_IsSynth
-    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
-        return false;
-   #endif
-
+    }
+    
     return true;
-  #endif
 }
 #endif
 
@@ -162,7 +151,6 @@ void TailMeasureAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
         auto& dataPointR = audioDataR[i];
         if (testing)
         {
-//            std::cout << dataPoint << std::endl;
             if (dataPoint < minValue) {
                 minValue = dataPoint;
             }
@@ -191,6 +179,8 @@ void TailMeasureAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
                         auto currentTime = std::chrono::steady_clock::now();
                         float elapsedMilliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count();
                         float elapsedSecondsWithHundredths = static_cast<float>(elapsedMilliseconds) / 1000.0f;
+                        *statusParam = 3.0f; // Notify GUI that RT 60 has been measured
+                        *rt60Value = elapsedSecondsWithHundredths;
                         std::cout << "RT 60 of " << elapsedSecondsWithHundredths << " seconds!" << std::endl;
                         testing = false;
                         initialAmplitudeHasBeenMeasured = false;
@@ -203,32 +193,43 @@ void TailMeasureAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
             
             dataPoint = 0.0f; // We need to block the output to avoid feedback.
             dataPointR = 0.0f;
-            // Output something
-            //
-            //        auto currentTime = std::chrono::steady_clock::now();
-            //        auto elapsedSeconds = std::chrono::duration_cast<std::chrono::seconds>(currentTime - startTime).count();
-            //
-            //        if (elapsedSeconds >= intervalSeconds) {
-            //            std::cout << "Min value: " << minValue << " - Max value: " << maxValue << std::endl;
-            //            startTime = currentTime; // Reset the start time
-            //        }
+            
         } else {
-            auto broadCasting = *performingTest < 0.5f ? false : true;
-            if (broadCasting)
+            auto testHasBeenStarted = *performingTest < 0.5f ? false : true;
+            
+            if (testHasBeenStarted || broadcastHasOccurred)
             {
-                dataPoint = random.nextFloat() * 0.25f - 0.125f; // Overwrite incoming data with white noise
-                dataPointR = random.nextFloat() * 0.25f - 0.125f; // Overwrite incoming data with white noise
-                broadcastHasOccurred = true;
-                // Maybe include a mechanism to automatically stop broadcast instead of leaving it to the user
-                // Maybe give the option of "manual broadcasting" via togglebutton?
-            } else
-            {
-                if (broadcastHasOccurred)
+                if (testHasBeenStarted)
+                {
+                    broadcasting = true;
+                    *statusParam = 1.0f; // Alert GUI that broadcsting has begun
+                    startTime = std::chrono::steady_clock::now(); // Measure starttime for 1 second broadcast of noise
+                    *performingTest = 0.0f;
+                }else if (broadcastHasOccurred)
                 {
                     // Launch testing process
                     initializeTest();
                     testing = true;
+                    
                 }
+                dataPoint = 0.0f; // Feedback prevention
+                dataPointR = 0.0f;
+                
+            }else if (broadcasting)
+            {
+                dataPoint = random.nextFloat() * 0.25f - 0.125f; // Overwrite incoming data with white noise
+                dataPointR = random.nextFloat() * 0.25f - 0.125f; // Overwrite incoming data with white noise
+                
+                auto currentTime = std::chrono::steady_clock::now();
+                float elapsedMilliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count();
+                if (elapsedMilliseconds / 1000.0f > broadcastTimeInSeconds) {
+                    broadcasting = false;
+                    broadcastHasOccurred = true;
+                    *statusParam = 2.0f; // Notify GUI that test phase has begun
+                }
+            } else {
+                dataPoint = 0.0f; // Feedback prevention
+                dataPointR = 0.0f;
             }
         }
     }
@@ -245,7 +246,7 @@ juce::AudioProcessorEditor* TailMeasureAudioProcessor::createEditor()
     return new TailMeasureAudioProcessorEditor (*this);
 }
 
-juce::AudioProcessorValueTreeState& TailMeasureAudioProcessor::getAPVTS()
+std::shared_ptr<juce::AudioProcessorValueTreeState> TailMeasureAudioProcessor::getAPVTS()
 {
     return parameters;
 }
@@ -271,12 +272,27 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
     return new TailMeasureAudioProcessor();
 }
 
-//void TailMeasureAudioProcessor::startTest()
-//{
-//    bool currentValue = static_cast<bool>(*performingTest);
-//    *performingTest = !currentValue;
-//    
-//    std::cout << "Hurrr: " << *performingTest << std::endl;
-//    std::cout << "Durrrr: " << static_cast<bool>(*performingTest) << std::endl;
-//}
+juce::AudioProcessorValueTreeState::ParameterLayout TailMeasureAudioProcessor::createParameterLayout()
+{
+    juce::AudioProcessorValueTreeState::ParameterLayout params;
+    params.add(std::make_unique<juce::AudioParameterBool> (juce::ParameterID("performingTest", 1.0), // parameterID
+                                                           "performingTest",     // parameter name
+                                                           false
+                                                           ));              // default value
+    params.add(std::make_unique<juce::AudioParameterFloat> (
+                                                            juce::ParameterID("rt60Value", 1.0), // parameterID
+                                                            "rt60Value",     // parameter name
+                                                            juce::NormalisableRange<float> (0.0f, 100000.0f, 0.01f),
+                                                            0.0f
+                                                            ));
+    
+    params.add(std::make_unique<juce::AudioParameterFloat>(
+                                                            juce::ParameterID("status", 1.0),
+                                                            "status",
+                                                           juce::NormalisableRange<float> (0.0f, 2.0f, 1.0f),
+                                                            0.0f
+                                                            ));
+    return params;
+}
+
 

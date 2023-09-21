@@ -18,10 +18,11 @@
 //==============================================================================
 /*
 */
-class MainComponent  : public juce::Component, public TailMeasureAudioProcessor
+class MainComponent  : public juce::Component, public juce::Button::Listener, public TailMeasureAudioProcessor,
+public juce::Timer
 {
 public:
-    MainComponent();
+    MainComponent(std::shared_ptr<juce::AudioProcessorValueTreeState> params);
     ~MainComponent() override;
 
     void paint (juce::Graphics&) override;
@@ -29,12 +30,14 @@ public:
     
     juce::TextButton& getStartTestButton();
     
-//    juce::ToggleButton& getStartTestButton();
+    juce::Label statusLabel;
+    juce::Label rtText;
     
-
 private:
-    
     juce::TextButton startTestButton {};
-//    juce::ToggleButton startTestButton {};
+    void timerCallback() override;
+    void buttonClicked(juce::Button* button) override;
+    
+    std::shared_ptr<juce::AudioProcessorValueTreeState> params;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };
