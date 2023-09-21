@@ -24,7 +24,9 @@
  
  ## Usage
  
- Once you have set it up, use it by simply pressing "Start Test". This will broadcast white noise into the reverb for three seconds, allowing it ample time to build up. Immediately afterwards, it measures the initial amplitude of the reverb tail, followed by continuous amplitude measurements of the decaying tail. As soon as the threshold of -60 dB has been reached, the result will be displayed on screen.
+ Once you have set it up, use it by simply pressing "Start Test". This will broadcast white noise on both channels into the reverb for three seconds, allowing it ample time to build up. Immediately afterwards, it measures the initial amplitude of the reverb tail, followed by continuous amplitude measurements of the decaying tail. As soon as the threshold of -60 dB has been reached, the result will be displayed on screen.
+ 
+ Note that you will not hear any sound during the testing process as the sound samples are only exchanged between the two plugins.
  
  A mix parameter should have no influence on the outcome, as this has no influence on the relative volumes. The same goes for predelay (as long as it is below 3 seconds).
  
