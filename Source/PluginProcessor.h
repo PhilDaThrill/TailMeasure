@@ -58,8 +58,6 @@ public:
     
     //==============================================================================
     std::shared_ptr<juce::AudioProcessorValueTreeState> getAPVTS();
-//    void startTest();
-    void initializeTest();
     
     juce::StringArray statuses;
     std::shared_ptr<juce::AudioProcessorValueTreeState> parameters;

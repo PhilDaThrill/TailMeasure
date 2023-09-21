@@ -73,8 +73,7 @@ double TailMeasureAudioProcessor::getTailLengthSeconds() const
 
 int TailMeasureAudioProcessor::getNumPrograms()
 {
-    return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
-                // so this should be at least 1, even if you're not really implementing programs.
+    return 1;   
 }
 
 int TailMeasureAudioProcessor::getCurrentProgram()
@@ -103,21 +102,13 @@ void TailMeasureAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
 
 void TailMeasureAudioProcessor::releaseResources()
 {
-    // When playback stops, you can use this as an opportunity to free up any
-    // spare memory, etc.
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
 bool TailMeasureAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
-
-    // This is the place where you check if the layout is supported.
-    // In this template code we only support mono or stereo.
-    // Some plugin hosts, such as certain GarageBand versions, will only
-    // load plugins that support stereo bus layouts.
     if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
         && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo()
-        && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::createLCR()
         )
     {
         return false;
@@ -127,20 +118,10 @@ bool TailMeasureAudioProcessor::isBusesLayoutSupported (const BusesLayout& layou
 }
 #endif
 
-void TailMeasureAudioProcessor::initializeTest()
-{
-    // Set up stuff like starttime i think
-    startTime = std::chrono::steady_clock::now();
-    broadcastHasOccurred = false;
-}
-
 void TailMeasureAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
-//    auto totalNumInputChannels  = getTotalNumInputChannels();
         
-    // Check input
-    // Generate output audio
     auto* audioData = buffer.getWritePointer (0); // For the measurement, we only look at the left channel and ignore the other one(s).
     auto* audioDataR = buffer.getWritePointer (1); // However, we still need to broadcast stereo noise for a fair test.
     
@@ -203,12 +184,13 @@ void TailMeasureAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
                 {
                     broadcasting = true;
                     *statusParam = 1.0f; // Alert GUI that broadcsting has begun
-                    startTime = std::chrono::steady_clock::now(); // Measure starttime for 1 second broadcast of noise
+                    startTime = std::chrono::steady_clock::now(); // Measure starttime for 3 seconds broadcast of noise
                     *performingTest = 0.0f;
                 }else if (broadcastHasOccurred)
                 {
                     // Launch testing process
-                    initializeTest();
+                    startTime = std::chrono::steady_clock::now();
+                    broadcastHasOccurred = false;
                     testing = true;
                     
                 }
